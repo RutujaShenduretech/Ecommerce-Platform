@@ -237,7 +237,7 @@ export default function Footer() {
         <div className="flex flex-col gap-5 text-xs text-white/35 sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 ShopSphere. All rights reserved.</p>
 
-          <div className="flex flex-wrap gap-x-3 gap-y-1">
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
             <span>India</span>
             <Link href="#" className="transition hover:text-white">
               Privacy

@@ -7,12 +7,33 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [terms, setTerms] = useState(false);
-
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+const [message, setMessage] = useState("");
+const [showPopup, setShowPopup] = useState(false);
+const [isSuccess, setIsSuccess] = useState(false);
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Add registration/authentication logic here.
-    console.log("Registration submitted");
+    const formData = new FormData(e.currentTarget);
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: formData.get("name"),
+        email: formData.get("email"),
+        password: formData.get("password"),
+      }),
+    });
+
+    const data = await response.json();
+    setMessage(data.message);
+    setIsSuccess(data.success);
+    setShowPopup(true);
+
+    if (data.success) {
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1800);
+    }
   };
 
   return (
@@ -270,14 +291,6 @@ export default function RegisterPage() {
               </div>
 
               {/* GOOGLE */}
-              <button
-                type="button"
-                className="flex h-14 w-full items-center justify-center gap-3 rounded-full border border-black/10 bg-white text-xs font-bold transition hover:-translate-y-0.5 hover:border-black/20 hover:bg-neutral-50"
-              >
-                <span className="text-base font-black">G</span>
-
-                Continue with Google
-              </button>
 
               {/* LOGIN */}
               <p className="mt-7 text-center text-xs text-black/45">
@@ -298,6 +311,42 @@ export default function RegisterPage() {
             </div>
           </div>
         </section>
+        {showPopup && (
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+    <div className="w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl">
+      <div
+        className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full text-3xl ${
+          isSuccess
+            ? "bg-green-100 text-green-600"
+            : "bg-red-100 text-red-600"
+        }`}
+      >
+        {isSuccess ? "✓" : "!"}
+      </div>
+
+      <h2 className="text-2xl font-bold text-gray-900">
+        {isSuccess ? "Registration Successful" : "Registration Failed"}
+      </h2>
+
+      <p className="mt-3 text-sm text-gray-600">
+        {message}
+      </p>
+
+      <button
+        onClick={() => {
+          setShowPopup(false);
+
+          if (isSuccess) {
+            window.location.href = "/products";
+          }
+        }}
+        className="mt-6 w-full rounded-full bg-black px-6 py-3 font-semibold text-white transition hover:bg-gray-800"
+      >
+        {isSuccess ? "Continue to Products" : "Try Again"}
+      </button>
+    </div>
+  </div>
+)}
       </div>
     </main>
   );
