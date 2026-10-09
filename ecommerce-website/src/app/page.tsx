@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
-import products from "@/app/products/page";
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -64,18 +63,78 @@ const slides = [
 
 
 
-type Product = { id: string | number; [key: string]: any };
+
+type Product = {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  oldPrice?: number | null;
+  image: string;
+  description: string;
+  colors: string[];
+  sizes: string[];
+  rating: number;
+  badge?: string | null;
+};
 
 export default function Home() {
-  // products may be a React component (default export of a page) rather than
-  // an array of product data. Guard at runtime and coerce to any to satisfy TS.
-  const featuredProducts: Product[] = Array.isArray(products as any)
-    ? ((products as any).slice(0, 4) as Product[])
-    : ([] as Product[]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-    const [current, setCurrent] = useState(0);
+  const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await fetch("/api/products");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch products");
+        }
+
+        const data = await response.json();
+
+        const formattedProducts: Product[] = data.products.map(
+          (product: any) => ({
+            id: Number(product.id),
+            name: product.name,
+            category: product.category,
+            price: Number(product.price),
+            oldPrice:
+              product.oldPrice !== null && product.oldPrice !== undefined
+                ? Number(product.oldPrice)
+                : null,
+            image: product.image,
+            description: product.description ?? "",
+            colors: product.colors ?? [],
+            sizes: product.sizes ?? [],
+            rating:
+              product.rating !== null && product.rating !== undefined
+                ? Number(product.rating)
+                : 0,
+            badge: product.badge ?? null,
+          })
+        );
+
+        setProducts(formattedProducts);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        setError("Unable to load products.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const featuredProducts = products.slice(0, 4);
   useEffect(() => {
     if (isPaused) return;
 
@@ -412,11 +471,25 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-x-5 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
-          {featuredProducts.map((product: Product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+<div className="grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+  {loading ? (
+    <div className="col-span-full py-10 text-center">
+      <p className="text-sm text-black/50">Loading products...</p>
+    </div>
+  ) : error ? (
+    <div className="col-span-full py-10 text-center">
+      <p className="text-sm text-red-500">{error}</p>
+    </div>
+  ) : featuredProducts.length === 0 ? (
+    <div className="col-span-full py-10 text-center">
+      <p className="text-sm text-black/50">No products found.</p>
+    </div>
+  ) : (
+    featuredProducts.map((product: Product) => (
+      <ProductCard key={product.id} product={product} />
+    ))
+  )}
+</div>
       </section>
 
       {/* Category banner */}
@@ -903,7 +976,7 @@ export default function Home() {
       </section>
 
 
-    <BrowserRouter>
+   <BrowserRouter>
       {/* Top Navbar */}
       <Navbar 
         isAuthenticated={isAuthenticated} 
@@ -937,7 +1010,7 @@ export default function Home() {
           }
         />
       </Routes>
-    </BrowserRouter>
+    </BrowserRouter> 
 
 
       {/* ================= RUNNING BANNER ================= */}

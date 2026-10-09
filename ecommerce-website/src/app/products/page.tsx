@@ -1,13 +1,14 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ProductCard from "@/components/ProductCard";
-import { products } from "@/data/products";
-
 export default function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState("featured");
-
   const categories = [
     "All",
     "Running",
@@ -15,7 +16,68 @@ export default function ProductsPage() {
     "Lifestyle",
     "Basketball",
   ];
+    useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
+        const response = await fetch("/api/products");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch products");
+        }
+
+        const data = await response.json();
+
+        const formattedProducts: Product[] = data.products.map(
+          (product: any) => ({
+            id: Number(product.id),
+            name: product.name,
+            category: product.category,
+            price: Number(product.price),
+            oldPrice:
+              product.oldPrice !== null &&
+              product.oldPrice !== undefined
+                ? Number(product.oldPrice)
+                : null,
+            image: product.image,
+            description: product.description ?? "",
+            colors: product.colors ?? [],
+            sizes: product.sizes ?? [],
+            rating:
+              product.rating !== null &&
+              product.rating !== undefined
+                ? Number(product.rating)
+                : 0,
+            badge: product.badge ?? null,
+          })
+        );
+
+        setProducts(formattedProducts);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        setError("Unable to load products.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+type Product = {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  oldPrice?: number | null;
+  image: string;
+  description: string;
+  colors: string[];
+  sizes: string[];
+  rating: number;
+  badge?: string | null;
+};
   const filteredProducts = useMemo(() => {
     let result = products.filter((product) => {
       const matchesSearch = product.name
@@ -41,8 +103,7 @@ export default function ProductsPage() {
     }
 
     return result;
-  }, [search, category, sort]);
-
+}, [products, search, category, sort]);
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-5 py-12 sm:px-8 lg:px-10">
      {/* =========================
@@ -247,21 +308,35 @@ export default function ProductsPage() {
         </p>
       </div>
 
-      {filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-1 gap-x-5 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      ) : (
-        <div className="rounded-3xl bg-neutral-100 py-24 text-center">
-          <h2 className="text-2xl font-bold">No products found</h2>
 
-          <p className="mt-2 text-black/50">
-            Try another search or category.
-          </p>
-        </div>
-      )}
+{loading ? (
+  <div className="rounded-3xl bg-neutral-100 py-24 text-center">
+    <p className="text-sm font-semibold text-black/40">
+      Loading products...
+    </p>
+  </div>
+) : error ? (
+  <div className="rounded-3xl bg-neutral-100 py-24 text-center">
+    <p className="text-sm font-semibold text-red-500">
+      {error}
+    </p>
+  </div>
+) : filteredProducts.length > 0 ? (
+  <div className="grid grid-cols-1 gap-x-5 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
+    {filteredProducts.map((product) => (
+      <ProductCard key={product.id} product={product} />
+    ))}
+  </div>
+) : (
+  <div className="rounded-3xl bg-neutral-100 py-24 text-center">
+    <h2 className="text-2xl font-bold">No products found</h2>
+
+    <p className="mt-2 text-black/50">
+      Try another search or category.
+    </p>
+  </div>
+)}
+      
     </main>
   );
 }
