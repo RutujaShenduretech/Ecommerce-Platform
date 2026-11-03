@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+git ls-files | ForEach-Object {
+  if (Test-Path $_ -PathType Leaf) {
+    Get-Item $_
+  }
+} | Sort-Object Length -Descending |
+Select-Object -First 15 Name, Length, FullName

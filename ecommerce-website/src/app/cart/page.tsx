@@ -101,7 +101,8 @@ export default function CartPage() {
 
   const [isPlacingOrder, setIsPlacingOrder] =
     useState(false);
-
+const [billNumber, setBillNumber] = useState("");
+const [savedBillTotal, setSavedBillTotal] = useState(0);
   /* ================================
      PRICE CALCULATION
   ================================= */
@@ -279,71 +280,82 @@ export default function CartPage() {
      PLACE ORDER
   ================================= */
 
-  const handlePlaceOrder = async () => {
-    const isValid = validatePayment();
 
-    if (!isValid) {
-      return;
+const handlePlaceOrder = async () => {
+  if (!validatePayment()) {
+    return;
+  }
+
+  if (cart.length === 0) {
+    showPopupMessage("error", "Empty Cart", "Please add products first.");
+    return;
+  }
+
+  setIsPlacingOrder(true);
+
+  try {
+    const response = await fetch("/api/bills", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        items: cart.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+        })),
+        promoCode: promo,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to save bill.");
     }
+    if (
+  !data.bill ||
+  !data.bill.billNumber ||
+  data.bill.total === undefined
+) {
+  throw new Error("Invalid bill response from server.");
+}
+    if (
+  !data.bill ||
+  !data.bill.billNumber ||
+  data.bill.total === undefined
+) {
+  throw new Error("Invalid bill response from server.");
+}
 
-    setIsPlacingOrder(true);
+    setMessageType("success");
+    setMessageTitle("Bill Saved Successfully");
+    setBillNumber(data.bill.billNumber);
+setSavedBillTotal(Number(data.bill.total));
+    setMessageText(
+      `Your bill number is ${data.bill.billNumber}. Total: ₹${data.bill.total}.`
+    );
+    setShowMessage(true);
 
-    try {
-      /*
-        DEMO ORDER FLOW
+    setTimeout(() => {
+      setShowMessage(false);
+      setShowConfirmation(true);
+    }, 1600);
 
-        Later, connect this to:
+  } catch (error) {
+    console.error("PLACE ORDER ERROR:", error);
 
-        POST /api/orders
-
-        Example body:
-
-        {
-          items: cart.map((item) => ({
-            productId: item.id,
-            quantity: item.quantity
-          })),
-          paymentMethod,
-          totalAmount: total
-        }
-      */
-
-      await new Promise((resolve) =>
-        setTimeout(resolve, 800)
-      );
-
-      setIsPlacingOrder(false);
-
-      setShowMessage(true);
-      setMessageType("success");
-      setMessageTitle("Payment Successful");
-      setMessageText(
-        "Your payment details have been successfully verified."
-      );
-
-      /*
-        Show confirmation after success message.
-      */
-
-      setTimeout(() => {
-        setShowMessage(false);
-        setShowConfirmation(true);
-      }, 1600);
-    } catch (error) {
-      console.error(
-        "PLACE ORDER ERROR:",
-        error
-      );
-
-      setIsPlacingOrder(false);
-
-      showPopupMessage(
-        "error",
-        "Order Failed",
-        "Something went wrong while placing your order. Please try again."
-      );
-    }
-  };
+    showPopupMessage(
+      "error",
+      "Order Failed",
+      error instanceof Error
+        ? error.message
+        : "Something went wrong."
+    );
+  } finally {
+    setIsPlacingOrder(false);
+  }
+};
 
   /* ================================
      EMPTY CART
@@ -1394,12 +1406,13 @@ export default function CartPage() {
 
                   <span className="font-black">
                     ₹
-                    {total.toLocaleString(
-                      "en-IN",
-                      {
-                        maximumFractionDigits: 0,
-                      }
-                    )}
+{savedBillTotal.toLocaleString(
+  "en-IN",
+  {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }
+)}
                   </span>
 
                 </div>
@@ -1421,7 +1434,26 @@ export default function CartPage() {
               <p className="mt-5 text-center text-xs leading-5 text-black/40">
                 Thank you for shopping with ShopSphere.
               </p>
+              <div className="flex justify-between text-sm">
+  <span className="text-black/50">
+    Bill Number
+  </span>
 
+  <span className="font-bold">
+    {billNumber}
+  </span>
+</div>
+<button
+  type="button"
+  onClick={() => {
+    if (billNumber) {
+      window.location.href = `/bill/${encodeURIComponent(billNumber)}`;
+    }
+  }}
+  className="mt-5 w-full rounded-full bg-green-600 px-5 py-4 text-xs font-black text-white transition hover:bg-green-700"
+>
+  VIEW / PRINT BILL →
+</button>
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
 
                 <Link

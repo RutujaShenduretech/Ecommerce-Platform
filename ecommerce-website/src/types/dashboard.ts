@@ -9,7 +9,7 @@ export interface Product {
   colors: string[];
   sizes: string[];
   rating: number;
-  badge?: string;
+badge?: string | null;
 }
 
 export interface UserProfile {

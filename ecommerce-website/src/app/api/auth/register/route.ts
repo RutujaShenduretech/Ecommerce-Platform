@@ -3,7 +3,7 @@ import { webcrypto } from "node:crypto";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-
+import { setUserSession } from "@/lib/auth";
 async function hashPassword(password: string) {
   const salt = webcrypto.getRandomValues(new Uint8Array(16));
   const keyMaterial = await webcrypto.subtle.importKey(
@@ -96,27 +96,27 @@ export async function POST(request: NextRequest) {
 
     const result = await db
       .insert(users)
-.values({
-  name: name.trim(),
-  email: normalizedEmail,
-  password: hashedPassword,
-})
+      .values({
+        name: name.trim(),
+        email: normalizedEmail,
+        password: hashedPassword,
+      })
       .returning({
         id: users.id,
         name: users.name,
         email: users.email,
       });
 
+    // Automatically create login session
+    await setUserSession(result[0].id);
+
     return NextResponse.json(
       {
         success: true,
-        message:
-          "Account created successfully",
+        message: "Account created successfully",
         user: result[0],
       },
-      {
-        status: 201,
-      }
+      { status: 201 }
     );
   } catch (error) {
     console.error(error);

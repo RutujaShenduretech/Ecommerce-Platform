@@ -5,7 +5,6 @@ import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import { useMemo, useState, useEffect} from "react";
 
-
 const slides = [
   {
     image:
