@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "src/utils/calculateTotal.js", "src/utils/calculateTotal.test.js"  ],
+, "src/utils/calculateTotal.js", "src/utils/calculateTotal.test.js", "src/test/db.ts"  ],
   "exclude": ["node_modules"]
 }
