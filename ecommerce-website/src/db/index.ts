@@ -1,11 +1,32 @@
 
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
-import * as schema from "./schema";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 1,
-});
+import { db } from "@/db";
+import { products } from "@/db/schema";
+import { NextResponse } from "next/server";
+import { asc } from "drizzle-orm";
 
-export const db = drizzle(pool, { schema });
+export async function GET() {
+  try {
+    const result = await db
+      .select()
+      .from(products)
+      .orderBy(asc(products.id));
+
+    return NextResponse.json({
+      success: true,
+      products: result,
+    });
+  } catch (error) {
+    console.error("Error fetching products:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to fetch products",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+}
